@@ -50,10 +50,15 @@
   <ItemGroup>
     <Compile Include="DeveloperToolset.cs" />
     <Compile Include="Inspector.cs" />
+    <Compile Include="PlayMakerFSMEditor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(MSCMODS)" /y</PostBuildEvent>
+    <PostBuildEvent>copy "$(TargetPath)" "$(MSCMODS)" /y
+copy "$(TargetDir)$(TargetName).pdb" "$(MSCMODS)" /y
+cd "$(MSCMODS)"
+call "debug.bat"
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

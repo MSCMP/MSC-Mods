@@ -58,3 +58,5 @@
 /.vs/MSC Mods/v15/Server
 /TrunkSnap/bin
 /TrunkSnap/obj
+.vs
+*.csproj.user
