@@ -3,6 +3,7 @@ using HutongGames.PlayMaker;
 using System;
 using System.Reflection;
 using MSCLoader;
+using System.Diagnostics;
 
 namespace DeveloperToolset
 {
@@ -31,6 +32,8 @@ namespace DeveloperToolset
 		/// </summary>
 		private Vector2 m_stateEditorScrollView = new Vector2();
 
+		public bool IsPinned = false;
+
 		private Vector2 m_previousEditedStateScrollView = new Vector2();
 		private FsmState m_previousEditedState = null;
 		private FsmState m_editedState = null;
@@ -49,26 +52,35 @@ namespace DeveloperToolset
 				return;
 			}
 
-			m_windowRect = GUI.Window(1, m_windowRect, RenderWindow, "PlayMaker FSM Editor");
+			Fsm fsm = m_editedComponent.Fsm;
+			GameObject editedGameObject = m_editedComponent.gameObject;
+			m_windowRect = GUI.Window(1, m_windowRect, RenderWindow, "PlayMaker FSM Editor - " + fsm.Name + " (" + editedGameObject.name + ")");
 		}
 
 		private void RenderWindow(int windowID) {
 			try {
-				GUILayout.BeginVertical("box");
+				GUILayout.BeginVertical();
 
 				Fsm fsm = m_editedComponent.Fsm;
-				GameObject editedGameObject = m_editedComponent.gameObject;
-				GUILayout.Label("Editing FSM " + fsm.Name + " of game object " + editedGameObject.name);
 
 				GUILayout.BeginHorizontal("sections");
-
 				RenderGraph(fsm);
 				RenderEditor(fsm);
+				GUILayout.EndHorizontal();
 
+				GUILayout.BeginHorizontal("buttons", GUILayout.Height(20.0f));
+				if (GUILayout.Button("Close")) {
+					StartEdit(null);
+				}
+				if (GUILayout.Button(IsPinned ? "Unpin" : "Pin")) {
+					IsPinned = !IsPinned;
+				}
+				if (GUILayout.Button("Inspect owner game object")) {
+					Inspector.SetInspect(m_editedComponent.gameObject.transform);
+				}
 				GUILayout.EndHorizontal();
 
 				GUILayout.EndVertical();
-
 				GUI.DragWindow();
 			}
 			catch (Exception e) {
@@ -128,6 +140,7 @@ namespace DeveloperToolset
 				case EditorState.Variables:
 					RenderVariablesEditor(fsm);
 					break;
+
 				case EditorState.Events:
 					RenderEventsEditor(fsm);
 					break;
@@ -140,7 +153,7 @@ namespace DeveloperToolset
 			m_graphScrollView = GUILayout.BeginScrollView(m_graphScrollView, GUILayout.Width(m_windowRect.width * 0.4f));
 
 			foreach (var state in fsm.States) {
-				GUILayout.BeginVertical("state");
+				GUILayout.BeginVertical();
 
 				var previousColor = GUI.color;
 
@@ -206,7 +219,6 @@ namespace DeveloperToolset
 			GUILayout.EndHorizontal();
 
 			m_stateEditorScrollView = GUILayout.BeginScrollView(m_stateEditorScrollView);
-
 			foreach (var action in editedState.Actions) {
 				GUILayout.BeginVertical("action");
 				GUILayout.Button(action.ToString());
@@ -276,7 +288,6 @@ namespace DeveloperToolset
 				}
 				GUILayout.EndVertical();
 			}
-
 			GUILayout.EndScrollView();
 			GUILayout.EndVertical();
 		}
@@ -465,177 +476,4 @@ namespace DeveloperToolset
 			}
 		}
 	}
-
-#if TEMP
-	SetFsmVarsFor(fsm, GUILayout.Toggle(ShowFsmVarsFor(fsm), "Show Variables"));
-			if (ShowFsmVarsFor(fsm))
-			{
-				GUILayout.Label("Float");
-				ListFsmVariables(fsm.FsmVariables.FloatVariables);
-				GUILayout.Label("Int");
-				ListFsmVariables(fsm.FsmVariables.IntVariables);
-				GUILayout.Label("Bool");
-				ListFsmVariables(fsm.FsmVariables.BoolVariables);
-				GUILayout.Label("String");
-				ListFsmVariables(fsm.FsmVariables.StringVariables);
-				GUILayout.Label("Vector2");
-				ListFsmVariables(fsm.FsmVariables.Vector2Variables);
-				GUILayout.Label("Vector3");
-				ListFsmVariables(fsm.FsmVariables.Vector3Variables);
-				GUILayout.Label("Rect");
-				ListFsmVariables(fsm.FsmVariables.RectVariables);
-				GUILayout.Label("Quaternion");
-				ListFsmVariables(fsm.FsmVariables.QuaternionVariables);
-				GUILayout.Label("Color");
-				ListFsmVariables(fsm.FsmVariables.ColorVariables);
-				GUILayout.Label("GameObject");
-				ListFsmVariables(fsm.FsmVariables.GameObjectVariables);
-				GUILayout.Label("Material");
-				ListFsmVariables(fsm.FsmVariables.MaterialVariables);
-				GUILayout.Label("Texture");
-				ListFsmVariables(fsm.FsmVariables.TextureVariables);
-				GUILayout.Label("Object");
-				ListFsmVariables(fsm.FsmVariables.ObjectVariables);
-			}
-
-			SetFsmGlobalTransitionFor(fsm, GUILayout.Toggle(ShowFsmGlobalTransitionFor(fsm), "Show Global Transition"));
-			if (ShowFsmGlobalTransitionFor(fsm))
-			{
-				GUILayout.Space(20);
-				GUILayout.Label("Global transitions");
-				foreach (var trans in fsm.FsmGlobalTransitions)
-				{
-					GUILayout.Label("Event(" + trans.EventName + ") To State(" + trans.ToState + ")");
-				}
-			}
-
-			SetFsmStatesFor(fsm, GUILayout.Toggle(ShowFsmStatesFor(fsm), "Show States"));
-			if (ShowFsmStatesFor(fsm))
-			{
-				GUILayout.Space(20);
-				GUILayout.Label("States");
-				foreach (var state in fsm.FsmStates)
-				{
-					GUILayout.Label(state.Name + (fsm.ActiveStateName == state.Name ? "(active)" : ""));
-					GUILayout.BeginHorizontal();
-					GUILayout.Space(20);
-					GUILayout.BeginVertical("box");
-					GUILayout.Label("Transitions:");
-					foreach (var transition in state.Transitions)
-					{
-						GUILayout.Label("Event(" + transition.EventName + ") To State(" + transition.ToState + ")");
-					}
-					GUILayout.Space(20);
-
-					GUILayout.Label("Actions:");
-					foreach (var action in state.Actions)
-					{
-						var typename = action.GetType().ToString();
-						typename = typename.Substring(typename.LastIndexOf(".", StringComparison.Ordinal) + 1);
-						GUILayout.Label(typename);
-
-						var fields = action.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
-						GUILayout.BeginHorizontal();
-						GUILayout.Space(20);
-						GUILayout.BeginVertical("box");
-						foreach (var fieldInfo in fields)
-						{
-							GUILayout.BeginHorizontal();
-							try
-							{
-								var fieldValue = fieldInfo.GetValue(action);
-								var fieldValueStr = fieldValue.ToString();
-								fieldValueStr = fieldValueStr.Substring(fieldValueStr.LastIndexOf(".", System.StringComparison.Ordinal) + 1);
-								if (fieldValue is FsmProperty)
-								{
-									var property = fieldValue as FsmProperty;
-									GUILayout.Label(fieldInfo.Name + ": (" + property.PropertyName + ")");
-									GUILayout.Label("target: " + property.TargetObject + "");
-								}
-								else if (fieldValue is NamedVariable)
-								{
-									var named = fieldValue as NamedVariable;
-									GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr + "(" + named.Name + ")");
-								}
-								else if (fieldValue is FsmEvent)
-								{
-									var evnt = fieldValue as FsmEvent;
-									GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr + "(" + evnt.Name + ")");
-								}
-								else
-								{
-									GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr);
-								}
-							}
-							catch (Exception)
-							{
-								GUILayout.Label(fieldInfo.Name);
-							}
-							//fieldInfo.SetValue(fieldInfo.Name, GUILayout.TextField(fieldInfo.GetValue(fieldInfo.Name).ToString()));
-							GUILayout.EndHorizontal();
-						}
-						GUILayout.EndVertical();
-						GUILayout.EndHorizontal();
-					}
-
-					GUILayout.Label("ActionData:");
-					var fields2 = state.ActionData.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
-					GUILayout.BeginHorizontal();
-					GUILayout.Space(20);
-					GUILayout.BeginVertical("box");
-					foreach (var fieldInfo in fields2)
-					{
-						GUILayout.BeginHorizontal();
-						try
-						{
-							var fieldValue = fieldInfo.GetValue(state.ActionData);
-							var fieldValueStr = fieldValue.ToString();
-							fieldValueStr = fieldValueStr.Substring(fieldValueStr.LastIndexOf(".", System.StringComparison.Ordinal) + 1);
-							if (fieldValue is NamedVariable)
-							{
-								var named = fieldValue as NamedVariable;
-								GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr + "(" + named.Name + ")");
-							}
-							else if (fieldValue is FsmEvent)
-							{
-								var evnt = fieldValue as FsmEvent;
-								GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr + "(" + evnt.Name + ")");
-							}
-							else
-							{
-								GUILayout.Label(fieldInfo.Name + ": " + fieldValueStr);
-							}
-						}
-						catch (Exception)
-						{
-							GUILayout.Label(fieldInfo.Name);
-						}
-						//fieldInfo.SetValue(fieldInfo.Name, GUILayout.TextField(fieldInfo.GetValue(fieldInfo.Name).ToString()));
-						GUILayout.EndHorizontal();
-					}
-					GUILayout.EndVertical();
-					GUILayout.EndHorizontal();
-
-					GUILayout.EndVertical();
-					GUILayout.EndHorizontal();
-				}
-			}
-
-			SetFsmEventsFor(fsm, GUILayout.Toggle(ShowFsmEventsFor(fsm), "Show Events"));
-			if (ShowFsmEventsFor(fsm))
-			{
-				GUILayout.Space(20);
-				GUILayout.Label("Events");
-				foreach (var evnt in fsm.FsmEvents)
-				{
-					GUILayout.BeginHorizontal();
-					GUILayout.Label(evnt.Name + ": " + evnt.Path);
-					if (GUILayout.Button("Send"))
-					{
-						fsm.SendEvent(evnt.Name);
-					}
-					GUILayout.EndHorizontal();
-				}
-			}
-#endif
 }

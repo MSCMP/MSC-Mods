@@ -281,11 +281,11 @@ namespace DeveloperToolset
 						GUILayout.EndScrollView();
 						GUILayout.EndArea();
 					}
+				}
 
-					if (m_fsmEditor != null)
-					{
-						m_fsmEditor.OnGUI();
-					}
+				if ((m_fsmEditor != null) && (m_fsmEditor.IsPinned || showGUI))
+				{
+					m_fsmEditor.OnGUI();
 				}
 			}
 			catch (Exception e)
