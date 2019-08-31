@@ -1,0 +1,3 @@
+[submodule "MSCDeveloperToolset"]
+	path = MSCDeveloperToolset
+	url = https://github.com/DarkKostas/MSCDeveloperToolset
